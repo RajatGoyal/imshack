@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<componentPackage>
+	<!-- Advanced Searchable DataGrid -->
+	<component id="MDataGrid" class="com.iwobanas.controls.MDataGrid" />
+	<component id="MDataGridColumn" class="com.iwobanas.controls.dataGridClasses.MDataGridColumn" />
+</componentPackage>

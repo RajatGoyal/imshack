@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+						width="800" height="500"
+						verticalScrollPolicy="off" horizontalScrollPolicy="off"
+				 color="#FFFFFF" fontFamily="Arial"	 showCloseButton="true" close="titlewindow1_closeHandler(event)"	creationComplete="windowedapplication1_creationCompleteHandler(event)">
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import com.dborisenko.api.twitter.TwitterAPI;
+			import com.dborisenko.api.twitter.commands.status.UpdateStatus;
+			import com.dborisenko.api.twitter.commands.timeline.LoadHomeTimeline;
+			import com.dborisenko.api.twitter.events.TwitterEvent;
+			import com.dborisenko.api.twitter.net.TwitterOperation;
+			import com.dborisenko.api.twitter.oauth.events.OAuthTwitterEvent;
+			
+			import flash.events.MouseEvent;
+			import flash.events.TextEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			protected static const CONSUMER_KEY:String = "t9lqI53JH6GN2mjup0Uag";
+			protected static const CONSUMER_SECRET:String = "77ukS4XnaSFVRg0AMweWdNZbuLnHHTwrDH5MiSirqk";
+			
+			[Bindable]
+			protected var twitterApi:TwitterAPI = new TwitterAPI();
+			
+			[Bindable]
+			protected var twitterStatuses:ArrayCollection;
+			
+			protected function loadTweets():void
+			{
+				status = "Loading tweets";
+				var op:TwitterOperation = new LoadHomeTimeline();
+				var handler:Function = function (event:TwitterEvent):void
+				{
+					op.removeEventListener(TwitterEvent.COMPLETE, handler);
+					if (event.success)
+					{
+						status = "Tweets loaded";
+						twitterStatuses = event.data as ArrayCollection;
+					}
+					else
+					{
+						status = "Loading error: " + event.data.toString();
+					}
+				};
+				op.addEventListener(TwitterEvent.COMPLETE, handler);
+				twitterApi.post(op);
+			}
+			
+			protected function sendTweet():void
+			{
+				status = "Sending tweet";
+				var text:String = tweetTextInput.text;
+				var op:TwitterOperation = new UpdateStatus(text);
+				var handler:Function = function (event:TwitterEvent):void
+				{
+					op.removeEventListener(TwitterEvent.COMPLETE, handler);
+					if (event.success)
+					{
+						status = "Tweet sent";
+						loadTweets();
+						tweetTextInput.text = "";
+					}
+					else
+					{
+						status = "Error of status sending: " + event.data.toString();
+					}
+				};
+				op.addEventListener(TwitterEvent.COMPLETE, handler);
+				twitterApi.post(op);
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				twitterApi.connection.addEventListener(OAuthTwitterEvent.REQUEST_TOKEN_RECEIVED, handleRequestTokenReceived);
+				twitterApi.connection.addEventListener(OAuthTwitterEvent.REQUEST_TOKEN_ERROR, handleRequestTokenError);
+				twitterApi.connection.addEventListener(OAuthTwitterEvent.ACCESS_TOKEN_ERROR, handleAccessTokenError);
+				twitterApi.connection.addEventListener(OAuthTwitterEvent.AUTHORIZED, handleAuthorized);
+				
+				twitterApi.connection.authorize(CONSUMER_KEY, CONSUMER_SECRET);
+			}
+			
+			protected function tweetTextInput_textInputHandler(event:TextEvent):void
+			{
+				if (event.text == "\n")
+				{
+					event.preventDefault();
+					sendTweet();
+				}
+			}
+			
+			protected function sendTweetButton_clickHandler(event:MouseEvent):void
+			{
+				sendTweet();
+			}
+			
+			protected function pinOkButton_clickHandler(event:MouseEvent):void
+			{
+				twitterApi.connection.grantAccess(pinTextInput.text);
+			}
+			
+			protected function handleRequestTokenReceived(event:OAuthTwitterEvent):void
+			{
+				authHTML.location = twitterApi.connection.authorizeURL;
+			}
+			
+			protected function handleRequestTokenError(event:OAuthTwitterEvent):void
+			{
+				status = "Connection error";
+			}
+			
+			protected function handleAccessTokenError(event:OAuthTwitterEvent):void
+			{
+				status = "Error of receiving access token";
+			}
+			
+			protected function handleAuthorized(event:OAuthTwitterEvent):void
+			{
+				status = "Authorized";
+				viewstack.selectedChild = twitterScreen;
+				loadTweets();
+			}
+			
+
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+
+		]]>
+	</mx:Script>
+	
+	<mx:ViewStack id="viewstack" width="100%" height="100%">
+		<mx:VBox width="100%" height="100%" id="authScreen">
+			<mx:TextInput text="{authHTML.location}" editable="false" width="100%"/>
+			<mx:HTML id="authHTML" width="100%" height="100%"/>
+			<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle">
+				<mx:Label text="Enter pin here:"/>
+				<mx:TextInput id="pinTextInput"/>
+				<mx:Button label="Ok" click="pinOkButton_clickHandler(event)" id="pinOkButton"/>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:VBox width="100%" height="100%" id="twitterScreen">
+			<mx:List width="100%" height="100%" dataProvider="{twitterStatuses}" id="tweetsList">
+				<mx:itemRenderer>
+					<mx:Component>
+						<mx:HBox width="100%" height="100" borderStyle="solid">
+							<mx:Image height="100%" source="{data.user.profileImageUrl}" />
+							<mx:VBox height="100%" width="100" >
+								<mx:Text width="100%" text="{data.user.screenName}" />
+								<mx:Text width="100%" text="{data.createdAt}" />
+							</mx:VBox>
+							<mx:Text width="100%" height="100%" text="{data.text}"/>
+						</mx:HBox>
+					</mx:Component>
+				</mx:itemRenderer>
+			</mx:List>
+			<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle">
+				<mx:TextArea width="100%" height="100%" id="tweetTextInput" 
+							 textInput="tweetTextInput_textInputHandler(event)"/>
+				<mx:Button label="Send" click="sendTweetButton_clickHandler(event)" 
+						   enabled="{tweetTextInput.text != ''}"
+						   height="100%"
+						   id="sendTweetButton"/>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:ViewStack>
+	
+</mx:TitleWindow>

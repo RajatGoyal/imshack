@@ -1,0 +1,1458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" xmlns:maps="com.google.maps.*" xmlns:fx="library://ns.adobe.com/flex/spark"
+				backgroundColor="#E2E2E2" usePreloader="true"  applicationComplete="onApplicationComplete()"
+	 paddingTop="200" paddingLeft="200"	 borderStyle="solid" cornerRadius="10" verticalScrollPolicy="off" backgroundSize="100%" horizontalScrollPolicy="off"	 showFlexChrome="false" initialize="onInit( event )" fontFamily="Arial" addedToStage="onAddedToStage( event )" resize="onResize( event )" xmlns:ns1="*" height="1000" width="1600" currentState="" xmlns:chat="com.yourpalmark.chat.*" xmlns:controls="com.iwobanas.controls.*" xmlns:dataGridClasses="com.iwobanas.controls.dataGridClasses.*">
+	
+
+	
+	
+	<mx:Script>
+		
+		<![CDATA[
+			import air.update.ApplicationUpdaterUI;
+			import air.update.events.DownloadErrorEvent;
+			import air.update.events.UpdateEvent;
+			
+			import caurina.transitions.Tweener;
+			
+			import com.adobe.air.notification.Notification;
+			import com.adobe.air.notification.Purr;
+			import com.adobe.air.preferences.Preference;
+			import com.adobe.timeslide.views.PieTimer;
+			import com.facebook.Facebook;
+			import com.facebook.commands.users.HasAppPermission;
+			import com.facebook.data.BooleanResultData;
+			import com.facebook.events.FacebookEvent;
+			import com.facebook.net.FacebookCall;
+			import com.facebook.utils.FacebookSessionUtil;
+			import com.pixelbreaker.ui.osx.MacMouseWheel;
+			import com.yourpalmark.chat.ChatManager;
+			import com.yourpalmark.chat.data.ChatRoom;
+			import com.yourpalmark.chat.data.ChatUser;
+			import com.yourpalmark.chat.data.LoginCredentials;
+			
+			import flash.display.NativeWindowSystemChrome;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ICollectionView;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.core.IDataRenderer;
+			import mx.core.Window;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			import mx.netmon.NetworkMonitor;
+			import mx.skins.halo.ApplicationBackground;
+			import mx.skins.halo.TitleBackground;
+			
+			import org.igniterealtime.xiff.collections.events.CollectionEvent;
+			import org.igniterealtime.xiff.conference.Room;
+			import org.igniterealtime.xiff.core.UnescapedJID;
+			import org.igniterealtime.xiff.data.Message;
+			import org.igniterealtime.xiff.data.Presence;
+			import org.igniterealtime.xiff.data.im.RosterGroup;
+			import org.igniterealtime.xiff.data.im.RosterItemVO;
+			import org.igniterealtime.xiff.events.DisconnectionEvent;
+			import org.igniterealtime.xiff.events.IncomingDataEvent;
+			import org.igniterealtime.xiff.events.InviteEvent;
+			import org.igniterealtime.xiff.events.LoginEvent;
+			import org.igniterealtime.xiff.events.MessageEvent;
+			import org.igniterealtime.xiff.events.OutgoingDataEvent;
+			import org.igniterealtime.xiff.events.PresenceEvent;
+			import org.igniterealtime.xiff.events.RegistrationSuccessEvent;
+			import org.igniterealtime.xiff.events.RosterEvent;
+			import org.igniterealtime.xiff.events.VCardEvent;
+			import org.igniterealtime.xiff.events.XIFFErrorEvent;
+		
+			private var trayIcon:BitmapData;
+			
+			//audiopoke videopoke stalk globalautoreply	
+	
+		private const fbAPIKey:String = "8d447dae385dc0b85b8618437be5520b";
+		private const fbSecret:String = "2aaea60919c740b1f6ed20ff851be2a4";
+		private	var updatetimer:Timer
+		private var purr:Purr;
+		private var timer:Timer;
+		private var sjid:UnescapedJID;
+		private var _loader:Loader;
+		public var infoforpm:Object;
+		private var photoLoader:Loader;
+		private var _timeofconnection:Date;
+		private var msg:Message;
+		public var lastxforstalk:int;
+		public var autoreplytext:String;
+		private var appUpdater:ApplicationUpdaterUI;
+			import com.adobe.air.notification.AbstractNotification;
+			
+		[Bindable]
+		private var currentenvironment:String;
+		private var chatManager:ChatManager;
+		private var messageDict:Dictionary;
+		private var roomPopup:RoomPopup;
+		private var iconPopup:IconSelectPopup;
+		private var facebook:Facebook;
+		private var fbSession:FacebookSessionUtil;
+		private var state:int;
+		private	var logwin:TitleWindow;
+			private var warwin:TitleWindow;
+		private var gclicked:String="off";
+		private var oclicked:String="off";
+		public	var request:URLRequest = new URLRequest("Halla.mp3");
+		public var notifywhere:String=AbstractNotification.BOTTOM_RIGHT;
+		[Bindable]
+		private var errorDataProvider:ArrayCollection = new ArrayCollection();
+		
+		[Bindable]
+		private var logDataProvider:ArrayCollection = new ArrayCollection();
+		
+		[Bindable]
+		private var presenceDataProvider:Array =    [
+		{ label: "Online", data: Presence.SHOW_CHAT },
+		{ label: "Free To Chat", data: Presence.SHOW_CHAT },
+		{ label: "Away", data: Presence.SHOW_AWAY },
+		{ label: "Do Not Disturb", data: Presence.SHOW_DND },
+		{ label: "Extended Away", data: Presence.SHOW_XA }
+		];
+		
+		[Bindable]
+		private var groupDataProvider:Array =   [
+		{ label: "Buddies", data: "Buddies" },
+		{ label: "Work", data: "Work" },
+		{ label: "Family", data: "Family" }
+		];
+		
+		private var instructionText:String = "Enter your username and password and press connect to log in.\n" +
+		"Username should be a full JID (username@domain).\n" +
+		"Login server and port are used if you fill them in. For example Google Talk uses talk.google.com.\n" +
+		"If you are not registered, enter a username and password and press register.\n" +
+		"Check the error log to determine if there was a conflict (ie. someone already has your ID).\n" +
+		"Once you have successfully registered you may log in."
+		
+		
+		
+			
+			private function onApplicationComplete():void
+			{			
+				
+				setApplicationNameAndVersion();
+				
+				appUpdater = new ApplicationUpdaterUI();
+				appUpdater.configurationFile = new File("app:/config/update-config.xml");
+				appUpdater.addEventListener(ErrorEvent.ERROR, onError);
+				appUpdater.initialize();
+				
+			}
+			
+			private function checkForUpdate():void
+			{
+				appUpdater.checkNow();  
+			}
+			
+			private function setApplicationNameAndVersion():void 
+			{
+				var appXML:XML = NativeApplication.nativeApplication.applicationDescriptor;
+				var ns:Namespace = appXML.namespace();
+			
+			}
+			/**
+			 * Displays an error message when the updater dispatches an error event.
+			 */
+			private function onError(event:ErrorEvent):void
+			{
+				Alert.show(event.toString());
+			}
+			
+		public function get rchatmanager():ChatManager{
+			return chatManager;
+			
+		}
+			
+			
+		public function clearLog():void
+		{
+		logDataProvider.removeAll();
+		}
+		
+		private function setupChatManager():void
+		{
+		chatManager = new ChatManager();
+		chatManager.addEventListener( DisconnectionEvent.DISCONNECT, onDisconnect );
+		chatManager.addEventListener( LoginEvent.LOGIN, onLogin );
+		chatManager.addEventListener( XIFFErrorEvent.XIFF_ERROR, onXIFFError );
+		chatManager.addEventListener( OutgoingDataEvent.OUTGOING_DATA, onOutgoingData );
+		chatManager.addEventListener( IncomingDataEvent.INCOMING_DATA, onIncomingData );
+		chatManager.addEventListener( RegistrationSuccessEvent.REGISTRATION_SUCCESS, onRegistrationSuccess );
+		chatManager.addEventListener( PresenceEvent.PRESENCE, onPresence );
+		chatManager.addEventListener( MessageEvent.MESSAGE, onMessage );
+		chatManager.addEventListener( InviteEvent.INVITED, onInvited );
+		chatManager.addEventListener( RosterEvent.ROSTER_LOADED, onRosterLoaded );
+		chatManager.addEventListener( RosterEvent.SUBSCRIPTION_DENIAL, onSubscriptionDenial );
+		chatManager.addEventListener( RosterEvent.SUBSCRIPTION_REQUEST, onSubscriptionRequest );
+		chatManager.addEventListener( RosterEvent.SUBSCRIPTION_REVOCATION, onSubscriptionRevocation );
+		chatManager.addEventListener( RosterEvent.USER_AVAILABLE, onUserAvailable );
+		chatManager.addEventListener( RosterEvent.USER_UNAVAILABLE, onUserUnavailable );
+		chatManager.chatUserRoster.addEventListener( CollectionEvent.COLLECTION_CHANGE, onChatUserRosterChange );
+		}
+		
+		
+		
+		private function setupDataProviders():void
+		{
+		errorLogGrid.dataProvider = errorDataProvider;
+		logList.dataProvider = logDataProvider;
+		updateGroupBuddyComboBox.dataProvider = chatManager.roster.source;
+		removeBuddyComboBox.dataProvider = chatManager.roster.source;
+		groupComboBox.dataProvider = groupDataProvider;
+		}
+		
+		private function connect():void
+		{
+		
+		if( serverInput.text == "" )
+		{
+		var domainIndex:int = usernameInput.text.lastIndexOf( "@" );
+		if( domainIndex > -1 ) serverInput.text = usernameInput.text.substring( domainIndex + 1 )
+		ChatManager.serverName = serverInput.text;
+		}
+		
+		var credentials:LoginCredentials = new LoginCredentials();
+		credentials.username = usernameInput.text;
+		credentials.password = passwordInput.text;
+		chatManager.connect( credentials );
+		}
+		
+		private function addMessagePopupWindow( userJID:UnescapedJID, userPresence:String, userStatus:String, message:Message=null ):void
+		{
+		
+
+		
+	//notification code ends
+		var messagePopup:PersonalMessagePopup = new PersonalMessagePopup();
+		messagePopup.addEventListener( MessageEvent.MESSAGE, onPopupMessage );
+		messagePopup.addEventListener( CloseEvent.CLOSE, onMessagePopupClose );
+		messagePopup.userPresence = userPresence;
+		messagePopup.userStatus = userStatus;
+		messagePopup.fromJID = chatManager.currentUser.jid;
+		messagePopup.toJID = userJID;
+		
+		if( message )
+		{
+		messagePopup.updateMessage( message );
+		}
+		PopUpManager.addPopUp( messagePopup, this, false );
+		PopUpManager.centerPopUp( messagePopup );
+		messageDict[ userJID.bareJID ] = messagePopup;
+		
+		}
+		
+		private function changeIcon():void
+		{
+		iconPopup = new IconSelectPopup();
+		iconPopup.chatManager = chatManager;
+		PopUpManager.addPopUp( iconPopup, this );
+		PopUpManager.centerPopUp( iconPopup );
+		}
+		
+		private function joinMUC( roomJID:UnescapedJID ):void
+		{
+		var joinRoomPopup:JoinRoomPopup = openJoinMUC();
+		joinRoomPopup.joinRoom( roomJID );
+		}
+		
+		private function openJoinMUC():JoinRoomPopup
+		{
+		var joinRoomPopup:JoinRoomPopup = new JoinRoomPopup();
+		joinRoomPopup.chatManager = chatManager;
+		joinRoomPopup.addEventListener( JoinRoomPopup.JOIN, onJoinRoom );
+		PopUpManager.addPopUp( joinRoomPopup, this );
+		PopUpManager.centerPopUp( joinRoomPopup );
+		
+		return joinRoomPopup;
+		}
+		
+		private function openMUC( room:ChatRoom ):RoomPopup
+		{
+		roomPopup = new RoomPopup();
+		roomPopup.chatManager = chatManager;
+		roomPopup.room = room;
+		roomPopup.addEventListener( XIFFErrorEvent.XIFF_ERROR, onXIFFError );
+		PopUpManager.addPopUp( roomPopup, this );
+		PopUpManager.centerPopUp( roomPopup );
+		
+		return roomPopup;
+		}
+		
+		private function updateLogScrollPosition():void
+		{
+		logList.verticalScrollPosition = logList.maxVerticalScrollPosition;
+		}
+		
+		private function connectToFBChat():void
+		{
+		chatManager.fbSession = facebook;
+		chatManager.connect( new LoginCredentials( facebook.uid ), true );
+		
+		}
+		
+			
+		private function onInit( event:FlexEvent ):void
+		{	
+			this.removeElement(loading);
+		topbar.addEventListener( MouseEvent.MOUSE_DOWN, startMove );
+						loadTrayIcon();
+			
+		 this.addEventListener(Event.CLOSING, minToTray);
+		 
+		
+			if(flash.system.Capabilities.isDebugger == false)
+			{
+				NativeApplication.nativeApplication.startAtLogin =true;
+			}
+		/*		if(NativeApplication.supportsSystemTrayIcon==true)
+				{
+				
+				}
+				NativeApplication.nativeApplication.icon.
+			
+			*/
+		zoominfo.visible=false;
+		setupChatManager();
+		messageDict = new Dictionary();
+		setupDataProviders();
+		state=1;
+		updatetimer=new Timer(60000);
+		updatetimer.addEventListener(TimerEvent.TIMER,checkupdate);
+		updatetimer.start()
+		ToolTipManager.enabled=true;
+		
+		}
+	
+		
+
+		public function checkupdate(e:Event):void{
+				this.checkForUpdate();
+				updatetimer.stop();
+			}
+			public function startMove(event:MouseEvent):void {
+				this.nativeWindow.startMove();
+			}
+			
+			public function loadTrayIcon():void{
+				var loader:Loader = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, readyToTray);
+				loader.load(new URLRequest("icon_016.png"));
+			}
+			
+			private function minToTray(event:Event):void{
+				event.preventDefault();
+				dock();
+			}
+			
+			public function readyToTray(event:Event):void{
+				trayIcon = event.target.content.bitmapData;
+				
+				var myMenu:NativeMenu = new NativeMenu();
+				
+				var openItem:NativeMenuItem = new NativeMenuItem("Open");
+				var closeItem:NativeMenuItem = new NativeMenuItem("Close");
+				
+				openItem.addEventListener(Event.SELECT, unDock);
+				closeItem.addEventListener(Event.SELECT, closeApp);
+				
+				myMenu.addItem(openItem);
+				myMenu.addItem(new NativeMenuItem("", true));
+				myMenu.addItem(closeItem);
+				
+				if(NativeApplication.supportsSystemTrayIcon){
+					SystemTrayIcon(NativeApplication.nativeApplication.icon).tooltip = "imshack";
+					
+					SystemTrayIcon(NativeApplication.nativeApplication.icon).
+						addEventListener(MouseEvent.CLICK, unDock);
+					this.nativeWindow.addEventListener(NativeWindowDisplayStateEvent.DISPLAY_STATE_CHANGING, winMinimized);
+				
+					SystemTrayIcon(NativeApplication.nativeApplication.icon).menu = myMenu;
+				}
+			}
+			
+			private function winMinimized(displayStateEvent:NativeWindowDisplayStateEvent):void{
+				if(displayStateEvent.afterDisplayState == NativeWindowDisplayState.MINIMIZED){
+					displayStateEvent.preventDefault();
+					dock();
+				}
+			}
+			
+			
+			public function dock():void{
+				stage.nativeWindow.visible = false;
+				
+				NativeApplication.nativeApplication.icon.bitmaps = [trayIcon];
+			}
+			
+			public function unDock(event:Event):void{
+				stage.nativeWindow.visible = true;
+				stage.nativeWindow.orderToFront();
+				
+				NativeApplication.nativeApplication.icon.bitmaps = [];
+			}
+			
+			private function closeApp(event:Event):void{
+				stage.nativeWindow.close();
+			}
+			
+		private function onAddedToStage( event:Event ):void
+		{
+		MacMouseWheel.setup( stage );
+		
+		
+		}
+	
+	
+		
+		
+		
+		
+		
+		
+		private function onResize( event:ResizeEvent ):void
+		{
+		if( roomPopup ) roomPopup.invalidateSize();
+		}
+		
+		private function onKeyUp( event:KeyboardEvent ):void
+		{
+		if( event.keyCode == Keyboard.ENTER )
+		{
+		if( usernameInput.text != "" && passwordInput.text != "" && serverPortInput.text != "" )
+		{
+		connect();
+		}
+		}
+		
+		}
+		
+		private function onFBImageClick( event:MouseEvent ):void
+		{
+		facebook = new Facebook();
+		fbSession = new FacebookSessionUtil( fbAPIKey, fbSecret, loaderInfo );
+		fbSession.addEventListener( FacebookEvent.CONNECT, onFBConnect );
+		facebook = fbSession.facebook;
+		fbSession.login();
+		ovichatlogo.alpha=.5;
+		gmaillogo.alpha=.5;
+		facebooklogo.alpha=1;
+		
+		Alert.show( "Click after you log into Facebook", "Facebook Alert", Alert.OK, null, onConfirmFBLogin );
+		}
+		
+		private function onConfirmFBLogin( event:CloseEvent ):void
+		{
+		fbSession.validateLogin();
+		}
+		
+		private function onFBConnect( event:FacebookEvent ):void
+		{
+		var call:FacebookCall = facebook.post( new HasAppPermission( "xmpp_login" ) );
+		call.addEventListener( FacebookEvent.COMPLETE, onHasAppPermission );
+		}
+		
+		private function onHasAppPermission( event:FacebookEvent ):void
+		{
+		if( event.success && ( event.data as BooleanResultData ).value )
+		{
+		connectToFBChat();
+		}
+		else
+		{
+		facebook.grantExtendedPermission( "xmpp_login" );
+		Alert.show( "Click after you grant permission", "Facebook Alert", Alert.OK, null, onGrantFBPermission );
+		}
+		event.currentTarget.removeEventListener( FacebookEvent.COMPLETE, arguments.callee );
+		}
+		
+		private function onGrantFBPermission( event:CloseEvent ):void
+		{
+		connectToFBChat();
+		}
+		
+		private function onDisconnect( event:DisconnectionEvent ):void
+		{
+		joinMUCButton.enabled = false;
+		createMUCButton.enabled = false;
+		groupComboBox.enabled = false;
+		updateGroupBuddyComboBox.enabled = false;
+		removeBuddyComboBox.enabled = false;
+		presenceStateComboBox.enabled = false;
+		changeIconButton.enabled = false;
+		disconnectButton.enabled = false;
+		connectButton.enabled = true;
+		registerButton.enabled = true;
+		
+		presenceStateComboBox.dataProvider = null;
+		rosterGrid.dataProvider = null;
+		}
+		
+		private function onLogin( event:LoginEvent ):void
+		{
+		joinMUCButton.enabled = true;
+		createMUCButton.enabled = true;
+		groupComboBox.enabled = true;
+		updateGroupBuddyComboBox.enabled = true;
+		removeBuddyComboBox.enabled = true;
+		presenceStateComboBox.enabled = true;
+		presenceStateComboBox.dataProvider = presenceDataProvider;
+		changeIconButton.enabled = true;
+		disconnectButton.enabled = true;
+		connectButton.enabled = false;
+		registerButton.enabled = false;
+		}
+		
+		private function onXIFFError( event:XIFFErrorEvent ):void
+		{
+		var error:Object = { errorCode: event.errorCode, errorCondition: event.errorCondition, errorMessage: event.errorMessage, errorType: event.errorType };
+		errorDataProvider.addItem( error );
+		logDataProvider.addItem( "XIFFErrorEvent " + "onXIFFError: " + "type:" + event.errorType + "  message:" + event.errorMessage );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onOutgoingData( event:OutgoingDataEvent ):void
+		{
+		logDataProvider.addItem( ">>outgoing: " + event.data.toString() );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onIncomingData( event:IncomingDataEvent ):void
+		{
+		logDataProvider.addItem( ">>incoming: " + event.data.toString() );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onRegistrationSuccess( event:RegistrationSuccessEvent ):void
+		{
+		connect();
+		
+		var generalPopup:GeneralPopup = new GeneralPopup();
+		generalPopup.message = "Registration was successful. You will now be logged in. You may want to add some contacts at this point.";
+		PopUpManager.addPopUp( generalPopup, this );
+		PopUpManager.centerPopUp( generalPopup );
+		}
+		
+		private function onPresence( event:PresenceEvent ):void
+		{
+		var presence:Presence = event.data[ 0 ] as Presence;
+		var presenceType:String;
+		
+		switch( presence.type )
+		{
+		case Presence.SHOW_CHAT:
+		case Presence.SHOW_AWAY:
+		case Presence.SHOW_DND:
+		case Presence.SHOW_XA:
+		presenceType = "Presence.TYPE_AVAILABLE";
+		break;
+		case Presence.TYPE_UNAVAILABLE:
+		presenceType = "Presence.TYPE_UNAVAILABLE";
+		break;
+		case Presence.TYPE_UNSUBSCRIBE:
+		presenceType = "Presence.TYPE_UNSUBSCRIBE";
+		break;
+		case Presence.TYPE_PROBE:
+		presenceType = "Presence.TYPE_PROBE";
+		break;
+		default:
+		break;
+		}
+		logDataProvider.addItem( "PresenceEvent " + presenceType + ": " + presence.from );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onMessage( event:MessageEvent ):void
+		{
+		
+		var message:Message = event.data as Message;
+		logDataProvider.addItem( ">>MESSAGE HANDLER: " + event.data );
+		logDataProvider.addItem( "TYPE: " + message.type );
+		
+		if( message.type == Message.TYPE_CHAT )
+		{
+		if( messageDict[ message.from.bareJID ] )
+		{
+		var ri2:RosterItemVO = RosterItemVO.get( message.from.unescaped, false );
+		var chatUser3:ChatUser = new ChatUser( ri2.jid );
+		chatUser3.rosterItem = ri2;
+		chatUser3.loadVCard( chatManager.connection);
+		infoforpm=chatUser3;
+		var messagePopup:PersonalMessagePopup = messageDict[ message.from.bareJID ] as PersonalMessagePopup;
+		messagePopup.updateMessage( message );
+		}
+		else
+		{
+		try
+		{
+			msg=message;
+		var ri:RosterItemVO = RosterItemVO.get( message.from.unescaped, false );
+		var chatUser2:ChatUser = new ChatUser( ri.jid );
+		chatUser2.rosterItem = ri;
+		chatUser2.loadVCard( chatManager.connection);
+		desktoppopup.data=chatUser2;
+		infoforpm=chatUser2;
+		addMessagePopupWindow( message.from.unescaped, ri.show, ri.status, message );
+		
+		//notification code
+		
+		
+		
+		
+		/*
+		var desktopnotification:DesktopNotification= new DesktopNotification();
+		desktopnotification.userPresence = ri.show;
+		desktopnotification.userStatus = ri.status;
+		desktopnotification.fromJID = chatManager.currentUser.jid;
+		desktopnotification.toJID =  message.from.unescaped;
+		desktopnotification.systemChrome=NativeWindowSystemChrome.NONE;
+		desktopnotification.open();
+		if( message )
+		{
+			desktopnotification.updateMessage( message );
+		}
+		*/
+		
+		
+		}
+		catch( event:Error )
+		{
+		logDataProvider.addItem( "Message from a user not in roster." );
+		}
+		}
+		}
+		
+		callLater( updateLogScrollPosition );
+		}
+	///notification as3notify library	
+		public function notify():void{
+				
+				
+				this.purr=new Purr(15);
+				var n:Notification = new Notification("Message",msg.body,notifywhere,10, desktoppopup.notificationimage);
+				n.width = 200;
+				
+				var soundFactory:Sound = new Sound();
+				soundFactory.load(request);
+				this.purr.notificationSound=soundFactory;
+				this.purr.addNotification(n);
+				
+		}
+		
+		
+			
+		private function onInvited( event:InviteEvent ):void
+		{
+		var acceptDeclinePopup:AcceptDeclinePopup = new AcceptDeclinePopup();
+		acceptDeclinePopup.additionalData = { room: event.room, reason: event.reason, from: event.from };
+		acceptDeclinePopup.message = event.from + " requests you to join a room. Reason: " + event.reason;
+		acceptDeclinePopup.addEventListener( AcceptDeclinePopup.ACCEPT, onInviteAccept );
+		acceptDeclinePopup.addEventListener( AcceptDeclinePopup.DECLINE, onInviteDecline );
+		PopUpManager.addPopUp( acceptDeclinePopup, this );
+		PopUpManager.centerPopUp( acceptDeclinePopup );
+		
+		logDataProvider.addItem( ">>handle Invitation to room: " + ( Room( event.room ).roomJID as UnescapedJID ).bareJID );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onInviteAccept( event:Event ):void
+		{
+		var acceptDeclinePopup:AcceptDeclinePopup = event.target as AcceptDeclinePopup;
+		joinMUC( Room( acceptDeclinePopup.additionalData.room ).roomJID );
+		PopUpManager.removePopUp( acceptDeclinePopup );
+		}
+		
+		private function onInviteDecline( event:Event ):void
+		{
+		var acceptDeclinePopup:AcceptDeclinePopup = event.target as AcceptDeclinePopup;
+		var room:Room = acceptDeclinePopup.additionalData.room as Room;
+		room.decline( room.userJID, "I do not want to join" );
+		PopUpManager.removePopUp( acceptDeclinePopup );
+		}
+		
+		private function onRosterLoaded( event:RosterEvent ):void
+		{
+		rosterGrid.dataProvider = chatManager.chatUserRoster.source;
+		rosterGrid.addEventListener(ListEvent.ITEM_CLICK , gridItemSelected);
+		rosterGrid.addEventListener(ListEvent.ITEM_ROLL_OVER, girditemmouseOver);
+		rosterGrid.addEventListener(ListEvent.ITEM_ROLL_OUT, girditemmouseOut);
+		_timeofconnection = new Date();
+		
+		var ritem:RosterItemVO = RosterItemVO.get( chatManager.currentUser.jid, false );
+		if(facebooklogo.alpha==.5){
+		var loggedUser:ChatUser = new ChatUser( ritem.jid );
+		loggedUser.rosterItem = ritem;
+		loggedUser.loadVCard( chatManager.connection );
+		loggeduserphoto.data=loggedUser;
+		}
+
+			
+		
+		// search.addEventListener(TextEvent.TEXT_INPUT , changescrollposition);
+		}
+			
+		
+		
+			public function get dataforstalk():Array
+			{
+				return chatManager.roster.source;
+			}
+		
+			public function get timeofconnection():Date
+			{
+				return _timeofconnection;
+			}
+			
+
+	//	private function changescrollposition(e:Event):void
+		//{
+			//rosterGrid.verticalScrollPosition=globalvars.vars;
+			
+	//	}
+		private function girditemmouseOut(e:ListEvent):void {
+		
+		zoominfo.visible=false;
+		
+		
+		}
+		private function girditemmouseOver(e:ListEvent):void {
+		
+		sjid=e.itemRenderer.data.rosterItem.jid;
+		
+		onRosterRollOver( sjid,e );
+		
+		
+		}
+		
+		private function gridItemSelected(e:ListEvent):void {
+		
+		sjid=e.itemRenderer.data.rosterItem.jid;
+		infoforpm=e.itemRenderer.data;
+		onRosterItemClick( sjid );
+		
+		
+		}
+		//inforenderer starts
+		private function onRosterRollOver( sjid:UnescapedJID,e:ListEvent):void
+		{
+		zoominfo.visible=true;
+		////////////////bring zoom info to front
+		
+		
+		var rosterItem2:RosterItemVO = RosterItemVO.get( sjid, false );
+		var pt:Point = new Point( this.contentMouseX, this.contentMouseY );
+		var global:Point = this.localToGlobal( pt );
+		
+		
+		zoominfo.x=global.x+10;
+		zoominfo.y=global.y+10;
+		a.text=rosterItem2.displayName;
+		
+		c.text=rosterItem2.status;
+		d.text=rosterItem2.jid.toString();
+		
+		info.data=e.itemRenderer.data;
+		sr.data=e.itemRenderer.data;
+		
+		}
+		//inforenderer ends
+		
+		private function onSubscriptionDenial( event:RosterEvent ):void
+		{
+		var generalPopup:GeneralPopup = new GeneralPopup();
+		generalPopup.message = event.jid + " denied you request to subscribe to their presence."
+		PopUpManager.addPopUp( generalPopup, this );
+		PopUpManager.centerPopUp( generalPopup );
+		}
+		
+		private function onSubscriptionRequest( event:RosterEvent ):void
+		{
+		if( !chatManager.roster.contains( RosterItemVO.get( event.jid, false ) ) )
+		{
+		var acceptDeclinePopup:AcceptDeclinePopup = new AcceptDeclinePopup();
+		acceptDeclinePopup.addEventListener( AcceptDeclinePopup.ACCEPT, onSubscriptionAccept );
+		acceptDeclinePopup.addEventListener( AcceptDeclinePopup.DECLINE, onSubscriptionDecline );
+		acceptDeclinePopup.jid = event.jid;
+		acceptDeclinePopup.message = "The user " + event.jid + " wishes to add you to their roster and see your presence online.";
+		PopUpManager.addPopUp( acceptDeclinePopup, this, false );
+		PopUpManager.centerPopUp( acceptDeclinePopup );
+		}
+		}
+		
+		private function onSubscriptionAccept( event:Event ):void
+		{
+		var acceptDeclinePopup:AcceptDeclinePopup = event.target as AcceptDeclinePopup;
+		chatManager.roster.grantSubscription( acceptDeclinePopup.jid, true );
+		PopUpManager.removePopUp( acceptDeclinePopup );
+		}
+		
+		private function onSubscriptionDecline( event:Event ):void
+		{
+		var acceptDeclinePopup:AcceptDeclinePopup = event.target as AcceptDeclinePopup;
+		chatManager.roster.denySubscription( acceptDeclinePopup.jid );
+		PopUpManager.removePopUp( acceptDeclinePopup );
+		}
+		
+		private function onSubscriptionRevocation( event:RosterEvent ):void
+		{
+		logDataProvider.addItem( "RosterEvent.SUBSCRIPTION_REVOCATION: " + event.jid.toString() );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onUserAvailable( event:RosterEvent ):void
+		{
+		logDataProvider.addItem( "RosterEvent.USER_AVAILABLE: " + event.jid );
+		
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onUserUnavailable( event:RosterEvent ):void
+		{
+		logDataProvider.addItem( "RosterEvent.USER_UNAVAILABLE: " + event.jid );
+		callLater( updateLogScrollPosition );
+		}
+		
+		private function onChatUserRosterChange( event:CollectionEvent ):void
+		{
+			
+		updateGroupBuddyComboBox.dataProvider = chatManager.roster.source;
+		removeBuddyComboBox.dataProvider = chatManager.roster.source;
+		rosterGrid.dataProvider = chatManager.chatUserRoster.source;
+		
+		rosterGrid.dispatchEvent(new DataGridEvent(DataGridEvent.HEADER_RELEASE, false, true, 1, null, 0, null, null, 0));
+		
+				}
+		
+		private function onPopupMessage( event:MessageEvent ):void
+		{
+		var message:Message = event.data as Message;
+		chatManager.connection.send( message );
+		}
+		
+		private function onMessagePopupClose( event:CloseEvent ):void
+		{
+		var messagePopup:PersonalMessagePopup = event.target as PersonalMessagePopup;
+		delete messageDict[ messagePopup.toJID.bareJID ];
+		PopUpManager.removePopUp( messagePopup );
+		}
+		
+		private function onServerInputChange():void
+		{
+		ChatManager.serverName = serverInput.text;
+		}
+		
+		private function onServerPortInputChange():void
+		{
+		ChatManager.serverPort = parseInt( serverPortInput.text );
+		}
+		
+		private function onUpdateGroupBuddyChange( event:ListEvent ):void
+		{
+		var rosterItem:RosterItemVO = RosterItemVO( updateGroupBuddyComboBox.selectedItem );
+		var groups:Array = chatManager.roster.getContainingGroups( rosterItem );
+		var group:RosterGroup = RosterGroup( groups[ 0 ] );
+		
+		for( var i:int = 0; i < groupDataProvider.length; i++ )
+		{
+		var groupObject:Object = groupDataProvider[ i ];
+		var groupLabel:String = groupObject.label;
+		
+		if( groupLabel == group.label )
+		{
+		groupComboBox.selectedIndex = i;
+		break;
+		}
+		}
+		}
+		
+		private function onPresenceStateChange( event:ListEvent ):void
+		{
+		chatManager.updatePresence( presenceStateComboBox.value.toString(), presenceStateComboBox.text );
+		}
+		
+		private function onConnectClick( event:MouseEvent ):void
+		{
+		connect();
+		}
+		
+		private function onChangeIconClick( event:MouseEvent ):void
+		{
+		changeIcon();
+		}
+		
+		private function onJoinMUCClick( event:MouseEvent ):void
+		{
+		openJoinMUC();
+		}
+		
+		private function onJoinRoom( event:Event ):void
+		{
+		var joinRoomPopup:JoinRoomPopup = event.target as JoinRoomPopup;
+		var room:ChatRoom = joinRoomPopup.room;
+		joinRoomPopup.close();
+		
+		openMUC( room );
+		}
+		
+		private function onCreateMUCClick( event:MouseEvent ):void
+		{
+		var createRoomPopup:CreateRoomPopup = new CreateRoomPopup();
+		createRoomPopup.chatManager = chatManager;
+		createRoomPopup.addEventListener( CreateRoomPopup.CREATE, onCreateRoom );
+		PopUpManager.addPopUp( createRoomPopup, this );
+		PopUpManager.centerPopUp( createRoomPopup );
+		}
+		
+		private function onCreateRoom( event:Event ):void
+		{
+		var createRoomPopup:CreateRoomPopup = event.target as CreateRoomPopup;
+		var room:ChatRoom = createRoomPopup.room;
+		createRoomPopup.close();
+		
+		openMUC( room );
+		}
+		
+		private function onClearLogClick( event:MouseEvent ):void
+		{
+		clearLog();
+		}
+		
+		private function onRegisterClick( event:MouseEvent ):void
+		{
+		var credentials:LoginCredentials = new LoginCredentials();
+		credentials.username = usernameInput.text;
+		
+		credentials.password = passwordInput.text;
+		chatManager.register( credentials );
+		}
+		
+		private function onDisconnectClick( event:MouseEvent ):void
+		{
+		chatManager.disconnect();
+		}
+		
+		private function onRosterItemClick( sjid:UnescapedJID ):void
+		{
+		
+		var rosterItem:RosterItemVO = RosterItemVO.get( sjid, false )
+		
+		if( messageDict[ rosterItem.jid.bareJID ] )
+		{
+		var win:PersonalMessagePopup = messageDict[ rosterItem.jid.bareJID ] as PersonalMessagePopup;
+		PopUpManager.bringToFront( win );
+		}
+		else
+		{
+		addMessagePopupWindow( rosterItem.jid, rosterItem.show, rosterItem.status);
+		}
+		}
+		
+		private function onUpdateGroupClick( event:MouseEvent ):void
+		{
+		if( updateGroupBuddyComboBox.selectedIndex != -1 )
+		{
+		var rosterItem:RosterItemVO = RosterItemVO( updateGroupBuddyComboBox.selectedItem );
+		chatManager.updateGroup( rosterItem, groupComboBox.selectedLabel );
+		updateGroupBuddyComboBox.selectedIndex = 0;
+		}
+		else
+		{
+		var generalPopup:GeneralPopup = new GeneralPopup();
+		generalPopup.message = "You must select a buddy to update their group.";
+		PopUpManager.addPopUp( generalPopup, this );
+		PopUpManager.centerPopUp( generalPopup );
+		}
+		}
+		
+		private function onAddBuddyClick( event:MouseEvent ):void
+		{
+		var jid:UnescapedJID = new UnescapedJID( buddyJIDInput.text );
+		var message:String;
+		
+		if( ChatManager.isValidJID( jid ) )
+		{
+		message = "A request has been sent to the user. You will see them online if they accept your request.";
+		chatManager.addBuddy( jid );
+		}
+		else
+		{
+		message = "The JID of the user you tried to add did not validate. Try just adding nick.";
+		}
+		
+		var generalPopup:GeneralPopup = new GeneralPopup();
+		generalPopup.message = message;
+		PopUpManager.addPopUp( generalPopup, this );
+		PopUpManager.centerPopUp( generalPopup );
+		}
+		
+		private function onRemoveBuddyClick( event:MouseEvent ):void
+		{
+		if( removeBuddyComboBox.selectedIndex != -1 )
+		{
+		var rosterItem:RosterItemVO = RosterItemVO( removeBuddyComboBox.selectedItem );
+		chatManager.removeBuddy( rosterItem );
+		removeBuddyComboBox.selectedIndex = 0;
+		}
+		else
+		{
+		var generalPopup:GeneralPopup = new GeneralPopup();
+		generalPopup.message = "You must select a buddy to remove.";
+		PopUpManager.addPopUp( generalPopup, this );
+		PopUpManager.centerPopUp( generalPopup );
+		}
+		}
+		
+		//Geolocation			
+		import com.google.maps.services.ClientGeocoderOptions;
+		import com.google.maps.LatLng;
+		import com.google.maps.Map;
+		import com.google.maps.MapEvent;
+		import com.google.maps.MapMouseEvent;
+		import com.google.maps.MapType;
+		import com.google.maps.services.ClientGeocoder;
+		import com.google.maps.services.GeocodingEvent;
+		import com.google.maps.overlays.Marker;
+		import com.google.maps.overlays.MarkerOptions;
+		import com.google.maps.InfoWindowOptions;
+		import mx.controls.Alert;
+		import com.google.maps.controls.ZoomControl;
+		
+		private function onMapReady(event:Event):void {
+		map.enableScrollWheelZoom();
+		map.enableContinuousZoom();
+		map.addControl(new ZoomControl());
+		}
+		
+		private function doGeocode(event:Event):void {
+		// Geocoding example
+		var geocoder:ClientGeocoder = new ClientGeocoder();
+		
+		geocoder.addEventListener(
+		GeocodingEvent.GEOCODING_SUCCESS,
+		function(event:GeocodingEvent):void {
+		var placemarks:Array = event.response.placemarks;
+		if (placemarks.length > 0) {
+		map.setCenter(placemarks[0].point);
+		var marker:Marker = new Marker(placemarks[0].point);
+		
+		marker.addEventListener(MapMouseEvent.CLICK, function (event:MapMouseEvent):void {
+		marker.openInfoWindow(new InfoWindowOptions({content: placemarks[0].address}));
+		});
+		map.addOverlay(marker);
+		}
+		});
+		geocoder.addEventListener(
+		GeocodingEvent.GEOCODING_FAILURE,
+		function(event:GeocodingEvent):void {
+		Alert.show("Geocoding failed");
+		trace(event);
+		trace(event.status);
+		});
+		geocoder.geocode(address.text);
+		}
+		//Geolocation Ends
+		
+		
+		protected function button1_clickHandler(event:MouseEvent):void
+		{
+			
+			this.currentState="locator";
+		
+		}
+		
+		
+		
+		
+		
+		protected function button2_clickHandler(event:MouseEvent):void
+		{
+		usernameInput.text="rajgoel123@gmail.com" // TODO Auto-generated method stub
+		passwordInput.text="rajat.2625298"
+		serverInput.text="talk.google.com"
+	
+		}
+		
+		
+		
+	    protected function button3_clickHandler(event:MouseEvent):void
+			{
+				var webbrowser:web_browser = new web_browser();
+				webbrowser.open();
+			}
+			
+		
+
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				var stalkwindow:stalk = new stalk();
+				stalkwindow.open();
+							
+			}
+//make global autoreply . put a flexglobalfunc inside , personalmessagepopup.
+
+			protected function button5_clickHandler(event:MouseEvent):void
+			{
+				if(autoreplybutton.label=="Off")
+				{
+				autoreplytext=autoreply.text;
+				autoreplybutton.label="On";
+				}
+				else
+				{
+					autoreplytext="";
+					autoreplybutton.label="Off";
+				}
+			}
+			
+			protected function image1_clickHandler(event:MouseEvent):void
+			{
+				var set:settings=new settings();
+				PopUpManager.addPopUp(set,this);
+				PopUpManager.bringToFront(logwin);
+				//create a new mxml file with group as it's rapper and add it to this window by using add child . 
+				
+			//	win.styleName
+				// TODO Auto-generated method stub
+			}
+			protected function image2_clickHandler(event:MouseEvent):void
+			{
+			
+			logwin=new TitleWindow();
+			logwin=logwindow;
+			logwin.visible=true;
+			PopUpManager.addPopUp(logwin,this);
+			PopUpManager.bringToFront(logwin);
+			}
+		
+
+			protected function image3_clickHandler(event:MouseEvent,selection:String):void
+			{
+				
+				switch(selection){
+					case 'gtalk':
+						serverInput.text="talk.google.com"
+						serverPortInput.text="5222";
+						ChatManager.serverName = serverInput.text;
+						ChatManager.serverPort = parseInt( serverPortInput.text );
+						ovichatlogo.alpha=.5;
+						gmaillogo.alpha=1;
+						facebooklogo.alpha=.5;
+						break;
+					case 'ovi':
+						serverInput.text="chat.ovi.com";
+						serverPortInput.text="5223";
+						ChatManager.serverName = serverInput.text;
+						ChatManager.serverPort = parseInt( serverPortInput.text );
+						ovichatlogo.alpha=1;
+						gmaillogo.alpha=.5;
+						facebooklogo.alpha=.5;
+						break;
+					default :
+						break;
+				}
+				
+			
+			}
+
+
+			protected function image4_clickHandler(event:MouseEvent):void
+			{
+				var twitter_instance:twitter=new twitter();
+				PopUpManager.addPopUp(twitter_instance,this);
+				PopUpManager.bringToFront(twitter_instance);
+				
+			}
+
+
+			protected function image5_clickHandler(event:MouseEvent):void
+			{
+				var twittersearch_inst:TwitterSearch=new TwitterSearch();
+				PopUpManager.addPopUp(twittersearch_inst,this);
+				PopUpManager.bringToFront(twittersearch_inst);
+				
+			}
+
+
+			protected function image6_clickHandler(event:MouseEvent):void
+			{
+				var stalktwitter:stalk_twitter=new stalk_twitter();
+				PopUpManager.addPopUp(stalktwitter,this);
+				PopUpManager.bringToFront(stalktwitter);
+			}
+
+
+			protected function logwindow_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(logwin);
+			}
+
+
+		
+
+
+			protected function image7_clickHandler(event:MouseEvent):void
+			{
+				warwin=new TitleWindow();
+				warwin=err;
+				warwin.visible=true;
+				PopUpManager.addPopUp(warwin,this);
+				PopUpManager.bringToFront(warwin);
+			}
+			protected function err_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(warwin);
+			}
+
+		]]>
+	</mx:Script>
+
+	<mx:Style source="assets/css/Main.css" />
+	<mx:states>
+		<mx:State name="locator">
+			<mx:AddChild>
+				<mx:Panel title="GeoLocation" width="100%" height="100%" id="panel1" horizontalAlign="center" horizontalCenter="3" backgroundColor="#E1E1E1" fontSize="12">
+					<mx:VBox width="100%" height="100%">
+						<mx:HBox width="1373" height="72" id="hbox1" textAlign="center" verticalAlign="middle" horizontalAlign="center" alpha="1.0" backgroundColor="#E1E1E1" borderStyle="none" horizontalGap="9">
+							<mx:Label
+								text="Where are you?" id="label1" fontSize="15"/>
+							<mx:TextInput
+								id="address"
+								text="Goa IN"
+								
+								enter="doGeocode(event);"
+								width="173"/>
+							<mx:Button
+								id="submitButton" label="Submit"
+								click="doGeocode(event);"
+								/>
+							<mx:Button label="Back" textAlign="right" click="currentState=null"/>
+						</mx:HBox>
+						<maps:Map 
+							id="map" 
+							sensor="false" key="ABQIAAAA_g_x0IchrFPPM2EwcoKD4hQnCN3BZRNrYa4p_Njswvs381p-6xTSUkmehMpVCQuyE2KEGoMqi-Pgnw"
+							 url="http://knock.x10.mx/cv-app/"							 
+							mapevent_mapready="onMapReady(event)"
+							width="100%" height="100%"/>
+					</mx:VBox>
+				</mx:Panel>
+			</mx:AddChild>
+			<mx:RemoveChild target="{vbox1}"/>
+			<mx:RemoveChild target="{gotomap}"/>
+			<mx:SetProperty name="height" value="900"/>
+		</mx:State>
+	</mx:states>
+	
+	<mx:VBox  paddingLeft="30" backgroundSize="100%" paddingRight="30"  borderStyle="solid" paddingTop="5" cornerRadius="60" width="721" height="442" verticalGap="5" paddingBottom="20" id="vbox1" y="134.85" horizontalScrollPolicy="off" verticalScrollPolicy="off"  backgroundAlpha="0.32" x="111.5"  backgroundColor="#424242">
+		<!--above datagrid hbox-->
+
+			<mx:HBox borderStyle="none" horizontalScrollPolicy="off" cornerRadius="10" height="22" width="649" id="topbar">
+				<mx:Spacer width="480" />
+				<mx:Image source="assets/images/war_logo.png" click="image7_clickHandler(event)"  width="22" height="19"/>
+				<mx:Image source="assets/images/log.png"  width="22" height="22" click="image2_clickHandler(event)"/>
+				<mx:Image source="settingsicon.png"  width="23" height="17" click="image1_clickHandler(event)" visible="true"/>
+				<mx:Button label="-" width="31" height="24" click="minimize()" textAlign="right"/>
+				<mx:Button label="X" width="31" height="24" click="close()"/>
+			
+			</mx:HBox>
+			<mx:HBox width="496" height="72" paddingTop="5" backgroundSize="100%">
+				
+				<mx:HBox width="217" height="65"  verticalAlign="middle" backgroundAlpha="0" backgroundImage="assets/bar.jpg" backgroundSize="100%" backgroundColor="#3A3A3A" textAlign="center">
+					
+					
+					<mx:Image id="gmaillogo"  source="assets/bar_logo/gmaillogo.jpg" width="49" height="42"  toolTip="Google Talk" click="image3_clickHandler(event,'gtalk')" />
+					<mx:Image id="facebooklogo" source="assets/bar_logo/facebooklogo.jpg" buttonMode="true" click="onFBImageClick( event )"  toolTip="Facebook Chat" width="52" height="41"/>
+					<mx:Image  id="ovichatlogo" source="assets/bar_logo/ovilogo.jpeg"  toolTip="Nokia Chat" click="image3_clickHandler(event,'ovi')"  width="39" height="42" />
+					
+					<!-- <mx:Image source="http://static.ak.fbcdn.net/images/fbconnect/login-buttons/connect_light_medium_long.gif" buttonMode="true" click="onFBImageClick( event )"  toolTip="Facebook Chat" width="196" height="27"/> -->
+					
+				</mx:HBox>
+				
+			</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="UserID@domain.com" width="122" fontWeight="bold"  color="#00000"/>
+			<mx:TextInput id="usernameInput" width="109" keyUp="onKeyUp( event )" />
+			<mx:Label text="Password" width="58" fontWeight="bold"  color="#00000"/>
+			<mx:TextInput id="passwordInput" width="113" displayAsPassword="true" keyUp="onKeyUp( event )" />
+			<mx:Label text="Login server" width="73" fontWeight="bold"  color="#00000" visible="false"/>
+			<mx:TextInput id="serverInput" width="139" change="onServerInputChange()" visible="false" displayAsPassword="false" text="{ChatManager.serverName}" keyUp="onKeyUp( event )" />
+			<mx:Label text="Server port" width="70" fontWeight="bold" visible="false"  color="#00000"/>
+			<mx:TextInput id="serverPortInput" width="75" restrict="0-9"  visible="false" maxChars="6" change="onServerPortInputChange()" displayAsPassword="false" text="{ChatManager.serverPort}" keyUp="onKeyUp( event )" />
+			
+		</mx:HBox>
+		
+			<mx:HBox width="100%" height="25">
+				<mx:Button label="Connect" width="127" height="100%" id="connectButton" click="onConnectClick( event )" />
+				<mx:Button label="Register" width="145" height="100%" id="registerButton" click="onRegisterClick( event )" />
+				<mx:Button label="Disconnect" width="118" height="100%" enabled="false" click="onDisconnectClick( event )" id="disconnectButton" />
+			</mx:HBox>
+			
+			
+		
+			<!-- datagrid hbox-->
+		<mx:HBox width="1295" height="229" horizontalScrollPolicy="off">
+			<mx:TitleWindow title="Roster" width="499" height="212" id="titlewindow1" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+			
+			<controls:MDataGrid id="rosterGrid" width="479" height="223" verticalScrollPolicy="on" showHeaders="false" >
+							<controls:columns>
+								<mx:DataGridColumn headerText="Icon"   dataField="image" itemRenderer="IconRenderer" width="40" />
+								<mx:DataGridColumn headerText="Online" dataField="online" itemRenderer="staterenderer"  width="8" sortDescending="true"  />
+								<dataGridClasses:MDataGridColumn headerText="Name" dataField="rosterItem.displayName" width="50" filterEditor="com.iwobanas.controls.dataGridClasses.filterEditors.WildcardFilterEditor" />
+								<dataGridClasses:MDataGridColumn headerText="ID" dataField="rosterItem.jid" id="djid" width="50" />
+								<mx:DataGridColumn headerText="Status" dataField="status" width="100" />
+								<mx:DataGridColumn headerText="Show" dataField="show" width="36" visible="false" />
+								<mx:DataGridColumn headerText="Ask" dataField="rosterItem.askType" width="36" visible="false" />
+								<mx:DataGridColumn headerText="Subscribe" dataField="rosterItem.subscribeType" width="36" visible="false" />
+								<mx:DataGridColumn headerText="resource" dataField="rosterItem.resourcefordatagrid" itemRenderer="resourcerenderer" width="15" visible="true" />
+							<!--		<mx:DataGridColumn headerText="stalk" dataField="rosterItem" itemRenderer="MicroChartsSample" width="200"/> -->
+							</controls:columns>
+			</controls:MDataGrid>
+				<mx:ControlBar>
+				    <ns1:SearchBox id="search" target="{rosterGrid}" />
+					<mx:Button x="38" y="0" label="Locations" click="button1_clickHandler(event)" id="gotomap"/>
+					<mx:Label text="{ICollectionView(rosterGrid.dataProvider).length} / {rosterGrid.originalCollection.length}" />
+				</mx:ControlBar>
+			</mx:TitleWindow>
+			<mx:TitleWindow title="Log" showCloseButton="true"  close="logwindow_closeHandler(event)" color="#000000" fontFamily="Arial" width="100%" height="70%" id="logwindow" visible="false" >
+				<mx:List color="#000000" id="logList" fontFamily="Arial" alternatingItemColors="[ 0xEEEEEE, 0xFFFFFF ]" variableRowHeight="true" wordWrap="true" width="100%" height="138" />
+				<mx:HBox width="100%" height="85">
+					<mx:Spacer width="100%" />
+					<mx:Button id="clearLogButton" label="Clear" click="onClearLogClick( event )" />
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:Label text="Autoreply"/>
+					<mx:TextArea width="595" height="18" id="autoreply"/>
+					<mx:Button label="On" width="46" height="19" id="autoreplybutton" click="button5_clickHandler(event)"/>
+				</mx:HBox>
+			</mx:TitleWindow>
+		</mx:HBox>
+			<!-- below datagrid hbox-->
+			<mx:HBox width="782">
+				<mx:Button id="changeIconButton" label="Change Image" width="114" enabled="false" click="onChangeIconClick( event )"  height="19"/>
+				<mx:ComboBox id="presenceStateComboBox" width="76" enabled="false" prompt="Change Presence" change="onPresenceStateChange( event )"  height="19"/>
+				<mx:TextInput id="buddyJIDInput" width="107"  height="20"/>
+				<mx:Button id="addBuddyButton" label="Add Buddy" width="94" click="onAddBuddyClick( event )"  height="18"/>
+				<mx:ComboBox id="removeBuddyComboBox" labelField="displayName" width="99" enabled="false"  height="20"/>
+				<mx:Button id="removeBuddyButton" label="Remove Buddy" width="107" click="onRemoveBuddyClick( event )"  height="20"/>
+
+				<!--		<mx:Image source="" click="image2_clickHandler(event)" />
+				<mx:Image source="" click="image3_clickHandler(event)" />
+				-->
+			</mx:HBox>
+		
+		<!-- Roster / Logs -->
+		<mx:HBox width="100%" height="100%">
+			<mx:VBox width="50%" height="186">
+			</mx:VBox>
+			<mx:VBox width="50%" height="153">
+
+					<mx:TitleWindow id="err" showCloseButton="true" close="err_closeHandler(event)" title="Errors" width="100%" height="30%" visible="false" >
+					<mx:DataGrid id="errorLogGrid" color="#FFFFFF" width="100%" height="100%" allowMultipleSelection="true" liveScrolling="true" editable="false" resizableColumns="true" visible="true">
+						<mx:columns>
+							<mx:DataGridColumn headerText="Code" dataField="errorCode" />
+							<mx:DataGridColumn headerText="Condition" dataField="errorCondition" />
+							<mx:DataGridColumn headerText="Message" dataField="errorMessage" />
+							<mx:DataGridColumn headerText="Type" dataField="errorType" />
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:TitleWindow>
+			</mx:VBox>
+		</mx:HBox>
+		
+		<!-- Settings -->
+		<mx:HBox width="100%" visible="false">
+			<mx:TitleWindow title="Update User" width="20%" height="100%">
+				<mx:HBox width="100%" height="100%" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5">
+					<mx:VBox width="100%" height="100%" verticalGap="10" verticalAlign="middle">
+					</mx:VBox>
+				</mx:HBox>
+			</mx:TitleWindow>
+			<mx:TitleWindow title="Add and Remove Buddies" width="20%" height="100%">
+				<mx:VBox width="100%" height="100%" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5">
+					<mx:HBox width="100%" height="50%" horizontalGap="2">
+					</mx:HBox>
+					<mx:HBox width="100%" height="50%" horizontalGap="2">
+					</mx:HBox>
+				</mx:VBox>
+			</mx:TitleWindow>
+			<mx:TitleWindow title="Update Buddy Group" width="40%" height="100%">
+				<mx:VBox width="100%" height="100%" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5">
+					<mx:HBox width="100%" height="100%">
+						<mx:VBox width="50%" height="100%" verticalGap="2">
+							<mx:Label text="Select Buddy" width="100%" fontWeight="bold" />
+							<mx:ComboBox id="updateGroupBuddyComboBox" labelField="displayName" width="100%" enabled="false" change="onUpdateGroupBuddyChange( event )" />
+						</mx:VBox>
+						<mx:VBox width="50%" height="100%" verticalGap="2">
+							<mx:Label text="Select Buddy Group" width="100%" fontWeight="bold" />
+							<mx:ComboBox id="groupComboBox" width="100%" enabled="false" selectedIndex="0" />
+						</mx:VBox>
+					</mx:HBox>
+					<mx:Button id="updateGroupButton" label="Update Buddy Group" width="100%" click="onUpdateGroupClick( event )" />
+				</mx:VBox>
+			</mx:TitleWindow>
+			<mx:TitleWindow title="Multi-User Chat" width="20%" height="100%">
+				<mx:VBox width="100%" height="100%" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5" verticalGap="10" verticalAlign="middle">
+					<mx:Button id="joinMUCButton" label="Join Room" width="100%" enabled="false" click="onJoinMUCClick( event )" />
+					<mx:Button id="createMUCButton" label="Create Room" width="100%" enabled="false" click="onCreateMUCClick( event )" />
+				</mx:VBox>
+			</mx:TitleWindow>
+		</mx:HBox>
+		
+	</mx:VBox>
+	<mx:VBox width="165" height="300" x="650.5" y="234.85" horizontalAlign="center" >
+		<mx:HBox>
+			<mx:Image source="assets/images/t_timeline_logo.png" click="image4_clickHandler(event)" />
+		</mx:HBox>
+		<mx:Spacer height="20"/>
+		<mx:HBox x="20">
+			<mx:Image source="assets/images/t_search_logo.png" click="image5_clickHandler(event)" />
+			
+		</mx:HBox>
+		<mx:Spacer height="20"/>
+		<mx:HBox x="20">
+			<mx:Image source="assets/images/t_stalk_logo.png" click="image6_clickHandler(event)"  />
+			
+		</mx:HBox>
+		
+	</mx:VBox>
+	<!-- info box -->
+	<mx:HBox id="zoominfo" width="419" height="111" borderStyle="none"  backgroundColor="#6F6F6F" backgroundImage="blue.png" visible="false">
+		<ns1:inforenderer id="info"  width="113" height="106"/>
+		<mx:Grid width="292" height="99">
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="288" height="52">
+					<mx:Label  text="" id="a" fontSize="15" color="#F2F2F2"   width="128"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="228" height="15">
+				<mx:GridItem width="100%" height="24">
+					<ns1:staterenderer id="sr"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="15">
+				<mx:GridItem width="209" height="20">
+					<mx:Label  text="" id="c"  width="283" color="#F5F5F5"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="15">
+				<mx:GridItem width="209" height="20">
+					<mx:Label  text="" id="d"  width="287" color="#0B849E"/>
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+	</mx:HBox>
+	
+	<ns1:popupimagerenderer id="desktoppopup" visible="false"  >
+		
+	</ns1:popupimagerenderer>
+	<ns1:inforenderer id="loggeduserphoto"  width="65" height="71" x="135" y="95" verticalScrollPolicy="off" horizontalScrollPolicy="off"/>
+	<ns1:circle_in_circle_stage4 id="loading" x="500" y="350" />
+</mx:WindowedApplication>

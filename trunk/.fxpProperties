@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fxpProperties abbreviated="false" authoringTool="Flex Builder" compiles="true" parentProject="6bfe60e2-818d-4891-b1d8-64cd19196b66" projectUUID="6bfe60e2-818d-4891-b1d8-64cd19196b66" sdkVersion="4.0.0" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52" version="4">
+  <projects/>
+  <src/>
+  <swc>
+    <linked location="sdkPlaceHolder" path="sdkPlaceHolder" position="0" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/work/Adobe Flash Builder 4/xiffguiair/libs" path="/libs" position="1" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Desktop/google_maps_sdk/lib/map_flex_1_20.swc" path="/linked-swc/map_flex_1_20.swc" position="2" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Desktop/xiff_2010-12-25 - Copy/examples/XIFFGUI/libs/as3crypto.swc" path="/linked-swc/as3crypto.swc" position="3" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Desktop/xiff_2010-12-25 - Copy/examples/XIFFGUI/libs/Facebook_library_v3.4_flex.swc" path="/linked-swc/Facebook_library_v3.4_flex.swc" position="4" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="${DCD_LIB_LOCATION}/fds.swc" path="${DCD_LIB_LOCATION}/fds.swc" position="5" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="${DCD_LOCALE_LOCATION}/fds_rb.swc" path="${DCD_LOCALE_LOCATION}/fds_rb.swc" position="6" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="${DCD_LOCALE_LOCATION}/fiber_rb.swc" path="${DCD_LOCALE_LOCATION}/fiber_rb.swc" position="7" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="${DCD_LOCALE_LOCATION}/serializers_rb.swc" path="${DCD_LOCALE_LOCATION}/serializers_rb.swc" position="8" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="${DCD_LIB_LOCATION}/fiber.swc" path="${DCD_LIB_LOCATION}/fiber.swc" position="9" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="${DCD_LIB_LOCATION}/serializers.swc" path="${DCD_LIB_LOCATION}/serializers.swc" position="10" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Downloads/everythingflexairlib.swc" path="/linked-swc/everythingflexairlib.swc" position="11" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Desktop/twitterexamplecode/examples/TwitterAIRDemo/libs/TwitterAPI_v1.2.swc" path="/linked-swc/TwitterAPI_v1.2.swc" position="12" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Downloads/TwitterApi.1.3.swc" path="/linked-swc/TwitterApi.1.3.swc" position="13" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Downloads/ReusableFx-20090901 (2)/ReusableFx.swc" path="/linked-swc/ReusableFx.swc" position="14" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+    <linked location="C:/Users/rajat/Downloads/tweener_1_33_74_as3_swc/tweener.swc" path="/linked-swc/tweener.swc" position="15" uuid="2cffe808-8866-4b86-9ac2-caaae0f81e52"/>
+  </swc>
+  <misc/>
+  <theme/>
+</fxpProperties>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="14" height="12">
+	<mx:Script>
+		<![CDATA[
+			
+			import com.yourpalmark.chat.data.ChatUser;
+			
+			import mx.events.FlexEvent;
+			
+			override public function set data( value:Object ):void
+			{
+				super.data = value;
+				invalidateProperties();
+				invalidateDisplayList();
+			}
+			
+			override protected function commitProperties():void
+			{
+				state.data="offline.jpg"
+					
+				if( data )
+				{
+					var user:ChatUser = data as ChatUser;
+					var str:String = user.rosterItem.resourcefordatagrid;
+					var result:int=str.search("Talk");
+					var result2:int=str.search("gmail");
+					var result3:int=str.search("Nimbuzz");
+					var result4:int=str.search("android");
+					var result5:int=str.search("ping");
+					if(result!=-1)
+					{
+						state.data="logos/gtalk.jpg"
+					}
+					else if (result2!=-1)
+					{
+						state.data="logos/gmail.jpg"
+					}
+					else if (result3!=-1)
+					{
+						state.data="logos/nimbuzz.jpg"
+					}
+					else if (result4!=-1)
+					{
+						state.data="logos/android.jpg"
+					}
+					else if (result5!=-1)
+					{
+						state.data="logos/ping.jpg"
+					}					
+					else 
+					{
+						state.data="offline.jpg"
+					}
+					
+				
+				}
+						
+				}
+				
+			
+		]]>
+	</mx:Script>
+	<mx:Image id="state" x="10" y="0" width="14" height="16"/>
+	
+</mx:Canvas>

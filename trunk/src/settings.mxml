@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" 
+		 xmlns:fx="library://ns.adobe.com/flex/spark" 
+		 color="#FFFFFF" horizontalScrollPolicy="off" verticalGap="15" verticalAlign="middle" horizontalAlign="center" verticalScrollPolicy="off" width="644" height="160" layout="vertical" >
+
+<mx:Script>
+	<![CDATA[
+		import mx.core.FlexGlobals;
+		import mx.managers.PopUpManager;
+		import com.adobe.air.notification.AbstractNotification;
+		private var sndFileToOpen:File; 
+		
+		private function soundFileOpen(): void
+		{
+			sndFileToOpen = new File();
+			try
+			{
+				sndFileToOpen.browseForOpen("Open", [new FileFilter("Sounds", "*.mp3")]);
+				sndFileToOpen.addEventListener(Event.SELECT, soundFileSelected);
+			}
+			catch (error:Error)
+			{
+				trace("Failed:", error.message);
+			}
+		}
+		
+		private function soundFileSelected(event: Event): void 
+		{
+			soundFile.text = File(event.target).url;
+			var request:URLRequest = new URLRequest(soundFile.text);
+			var soundFactory:Sound = new Sound();
+			soundFactory.addEventListener(Event.COMPLETE, soundcompleteHandler);
+			soundFactory.addEventListener(Event.ID3, id3Handler);
+			soundFactory.addEventListener(IOErrorEvent.IO_ERROR, soundioErrorHandler);
+			soundFactory.addEventListener(ProgressEvent.PROGRESS, progressHandler);
+			FlexGlobals.topLevelApplication.request=request;
+		}
+		
+		private function soundcompleteHandler(event:Event):void 
+		{
+			trace("completeHandler: " + event);
+		}
+		
+		private function id3Handler(event:Event):void 
+		{
+			trace("id3Handler: " + event);
+		}
+		
+		private function soundioErrorHandler(event:Event):void 
+		{
+			trace("ioErrorHandler: " + event);
+		}
+		
+		private function progressHandler(event:ProgressEvent):void 
+		{
+			trace("progressHandler: " + event);
+		}
+
+		protected function ok_clickHandler(event:MouseEvent):void
+		{
+			PopUpManager.removePopUp(this);
+		}
+
+		protected function setlocation(where:String):void
+		{
+			FlexGlobals.topLevelApplication.notifywhere=where;
+			switch(where){
+				case AbstractNotification.TOP_LEFT:
+					tl.enabled=false;
+					tr.enabled=true;
+					br.enabled=true;
+					bl.enabled=true;
+					break;
+				case AbstractNotification.TOP_RIGHT:
+					tl.enabled=true;
+					tr.enabled=false;
+					br.enabled=true;
+					bl.enabled=true;
+					break;
+				case AbstractNotification.BOTTOM_RIGHT:
+					tl.enabled=true;
+					tr.enabled=true;
+					br.enabled=false;
+					bl.enabled=true;
+					break;
+				case AbstractNotification.BOTTOM_LEFT:
+					tl.enabled=true;
+					tr.enabled=true;
+					br.enabled=true;
+					bl.enabled=false;
+					break;
+				default :
+					break;
+			}
+		}
+	]]>
+</mx:Script>
+
+	
+
+	
+	<mx:HBox width="500">
+		<mx:Label text="Choose Notification Sound/Enter Url"/>
+		<mx:TextInput id="soundFile" width="200"/>
+		<mx:Button label="Browse" width="69"
+				   paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0" click="soundFileOpen()"/>
+	</mx:HBox>
+	<mx:HBox>
+	<mx:Label text="Notification Position on Desktop :" />
+	<mx:Button id="tl" click="setlocation(AbstractNotification.TOP_LEFT)" label="Top Left" top="2" left="2"/>
+	<mx:Button  id="tr" click="setlocation(AbstractNotification.TOP_RIGHT)" label="Top Right" top="2" right="2"/>
+	<mx:Button  id="br" click="setlocation(AbstractNotification.BOTTOM_RIGHT)" label="Bottom Right" right="2" bottom="2"/>
+	<mx:Button  id="bl" click="setlocation(AbstractNotification.BOTTOM_LEFT)" label="Bottom Left" left="2" bottom="2"/>
+	</mx:HBox>
+	<mx:Button id="ok" label="Ok" click="ok_clickHandler(event)" />
+
+</mx:TitleWindow>
