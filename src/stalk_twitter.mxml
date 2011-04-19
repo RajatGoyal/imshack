@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+		   width="320" height="400" 
+		   verticalScrollPolicy="off" horizontalScrollPolicy="off"   showCloseButton="true" close="titlewindow1_closeHandler(event)"
+		   >
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.managers.CursorManager;
+			
+			import twitter.api.Twitter;
+			import twitter.api.TwitterSearch;
+			import twitter.api.data.TwitterStatus;
+			import twitter.api.data.TwitterUser;
+			import twitter.api.events.TwitterEvent;
+			
+			[Bindable]
+			private var twitterStatusCollection:ArrayCollection;
+			
+			private function doSearch():void
+			{
+				CursorManager.setBusyCursor();
+				var twit:Twitter = new Twitter();
+				twit.addEventListener( TwitterEvent.ON_USER_TIMELINE_RESULT, userTimelineResult);
+				twit.loadUserTimeline(tiTwitterUser.text);
+			}
+			
+			private function userTimelineResult(event:TwitterEvent):void
+			{
+				twitterStatusCollection = new ArrayCollection();
+				for each( var status:TwitterStatus in event.data )
+				{
+					twitterStatusCollection.addItem(status);
+				}
+				CursorManager.removeBusyCursor();
+			}
+			
+
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+
+		]]>
+	</mx:Script>
+	<mx:VBox width="308"
+			 height="417" paddingTop="50"
+			 backgroundColor="#ADADAD"
+			 horizontalAlign="center" x="-2" y="10" backgroundAlpha="0.22">
+		
+		<mx:HBox width="250">
+			<mx:Label text="Twitter user:" fontWeight="bold"/>
+			<mx:TextInput id="tiTwitterUser" width="100%"/>
+		</mx:HBox>
+		<mx:HBox width="250" horizontalAlign="right">
+			<mx:Button label="Get Tweets!" click="doSearch()"/>
+		</mx:HBox>
+		
+		<mx:VBox width="250"
+				 horizontalAlign="center">
+			<mx:HBox width="248" x="1" height="56">
+				<mx:Image source="{twitterStatusCollection.length > 0 ? twitterStatusCollection.getItemAt(0).user.profileImageUrl : ''}"
+						  width="78"
+						  maintainAspectRatio="true" height="53"/>
+				<mx:Text text="Name: {twitterStatusCollection.length > 0 ? twitterStatusCollection.getItemAt(0).user.name : ''}"
+						 fontWeight="bold"/>
+			</mx:HBox>
+			
+			<mx:DataGrid dataProvider="{twitterStatusCollection}"
+						 width="250"
+						 id="dg" variableRowHeight="true" wordWrap="true" height="208">
+				<mx:columns>
+					<mx:DataGridColumn headerText="Tweets" resizable="true" wordWrap="true" dataField="text"/>
+				</mx:columns>
+			</mx:DataGrid>
+			
+		</mx:VBox>
+		
+	</mx:VBox>
+</mx:TitleWindow>

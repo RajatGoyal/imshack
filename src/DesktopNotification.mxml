@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AlertWindow xmlns="com.everythingflex.air.components.*"
+			   xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+		     title="Message" delayTime="10" width="284" height="192" initialize="onInit( event )" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:local="*" >
+		
+
+	<mx:Script>
+		<![CDATA[
+			import com.yourpalmark.chat.ChatManager;
+			import com.yourpalmark.chat.data.ChatRoom;
+			import com.yourpalmark.chat.data.ChatUser;
+			
+			import flash.display.NativeWindowSystemChrome;
+			import flash.utils.Timer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.Application;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import org.igniterealtime.xiff.core.UnescapedJID;
+			import org.igniterealtime.xiff.data.Message;
+			import org.igniterealtime.xiff.data.Presence;
+			import org.igniterealtime.xiff.data.im.RosterItemVO;
+			import org.igniterealtime.xiff.events.MessageEvent;
+			
+			
+			private var i:int=1;
+			public static var CLOSE:String = "close";
+			public var displayname:String;
+			private var _tojid:UnescapedJID;
+			private var _fromjid:UnescapedJID;
+			private var ritem:RosterItemVO;
+			private var timer:Timer;
+			
+			
+			public function get toJID():UnescapedJID
+			{
+				return _tojid;
+			
+
+			}
+			
+			public function returnritem():RosterItemVO
+			{
+				return ritem;
+			}
+			
+			public function refresh(e:TimerEvent):void
+			{
+				setToJID(_tojid);
+			}
+			public function set toJID( value:UnescapedJID ):void
+			{
+				_tojid = value;
+				
+			
+				callLater( setToJID, [ value ] );
+			}
+			
+			public function set fromJID( value:UnescapedJID ):void
+			{
+				_fromjid = value;
+			}
+			
+			public function set userPresence( value:String ):void
+			{
+				//callLater( setPresence, [ value ] );
+			}
+			
+			public function set userStatus( value:String ):void
+			{
+				//callLater( setStatus, [ value ] );
+			}
+			
+			public function updateMessage( message:Message ):void
+			{
+				
+				if( message.state ) callLater( setState, [ message.state ] );
+				
+				if( message.body ) { 
+					
+				callLater( updateMessageDisplay, [ message.body, _tojid, message.time ] )
+	
+				}
+				
+			}
+		
+					
+				
+			/*	if( autoreplytext.text.length > 0 && autoreplytext.visible==true )
+				{
+					var message2:Message = new Message( _tojid.escaped, null, null, null, Message.TYPE_CHAT, null );
+					message2.from = _fromjid.escaped;
+					message2.body = autoreplytext.text;
+					
+					updateMessageDisplay( autoreplytext.text, _fromjid, message2.time );
+					
+					callLater( clearTypeArea );
+					callLater( updateScrollPosition );
+					
+					var messageEvent2:MessageEvent = new MessageEvent();
+					messageEvent2.data = message2;
+					dispatchEvent( messageEvent2 );
+				}
+				*/
+				 //receiverLC.send("_myConnection", "playMC");
+
+		
+			private function setToJID( jid:UnescapedJID ):void
+			{
+				
+				//userJIDLabel.text = jid.toString();
+				ritem = RosterItemVO.get( jid, false );
+				displayname = ritem.displayName;
+				userJIDLabel.text= ritem.displayName;
+				callLater( setStatus, [ ritem.status.toString()] )
+				callLater(setPresence, [ ritem.online.toString()] )
+				if (ritem.online==true )
+				{
+					online.data="online.jpg"
+				}
+				else
+				{
+					online.data="offline.jpg"
+					
+				}
+				if(ritem.show=="away")
+				{
+					online.data="idle.jpg"
+				}
+				if(ritem.show=="dnd"||ritem.show=="DND")
+				{
+					online.data="dnd.jpg"
+				}
+			}
+			
+			private function setPresence( presence:String ):void
+			{
+			}
+			
+			private function setStatus( status:String ):void
+			{
+				userStatusLabel.text = status;
+			}
+			
+			private function setState( state:String ):void
+			{
+			}
+			
+			
+			private function updateMessageDisplay( message:String, jid:UnescapedJID, time:Date ):void
+			{
+				if( !time ) time = new Date();
+				
+				var hours:int = ( time.hours == 0 || time.hours == 12 ) ? 12 : time.hours > 12 ? time.hours - 12 : time.hours;
+				var minutes:String = time.minutes.toString().length == 1 ? "0" + time.minutes.toString() : time.minutes.toString();
+				messageTextArea.htmlText += "[" + hours.toString() + ":" + minutes + " | " + jid.bareJID + "] " + message;
+				callLater( updateScrollPosition );
+				
+			
+				// receiverLC.send("_myConnection", "playMC");
+
+			}
+			
+			private function updateScrollPosition():void
+			{
+				messageTextArea.verticalScrollPosition = messageTextArea.maxVerticalScrollPosition;
+			}
+			
+			private function onInit( event:FlexEvent ):void
+			{
+				
+			
+			userimage.data=FlexGlobals.topLevelApplication.infoforpm;
+						
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var voicechatwindow:voiceChat = new voiceChat();
+				voicechatwindow.address=ritem.jid.toString();
+				voicechatwindow.open();
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				var videochatwindow:videoChat = new videoChat();
+				videochatwindow.address=ritem.jid.toString();
+				videochatwindow.open();
+			}
+			
+			
+
+		]]>
+	</mx:Script>
+	
+	<mx:VBox width="290" height="209" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5" x="-3" y="-4">
+		<mx:HBox width="100%" height="89">
+			<local:inforenderer id="userimage"  width="86" height="84"/>
+			<mx:Spacer/>
+			<mx:Grid width="174" height="89" >
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="100%" height="100%">
+						<mx:Spacer/>
+						<mx:Label id="userJIDLabel" text="" width="100%" fontWeight="bold" />
+						<mx:Spacer/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="100%" height="100%">
+						<mx:Image width="16" height="17" id="online"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="154" height="100%">
+						<mx:Label id="userStatusLabel" text="" fontWeight="bold" />
+					</mx:GridItem>
+				</mx:GridRow>
+			</mx:Grid>
+		</mx:HBox>
+		<mx:Label id="msg" width="184"/>
+		<mx:TextArea id="messageTextArea" width="279" height="61"  borderStyle="inset" editable="false" />
+		<mx:HBox width="277" height="29">
+			<mx:Button label="Video Chat" click="button2_clickHandler(event)" width="135"/>
+			<mx:Button label="Voice Chat" click="button1_clickHandler(event)" width="131"/>
+		</mx:HBox>
+	
+	</mx:VBox>
+</AlertWindow>

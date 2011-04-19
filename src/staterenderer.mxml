@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="14" height="12">
+	<mx:Script>
+		<![CDATA[
+			
+			import com.yourpalmark.chat.data.ChatUser;
+			
+			import mx.events.FlexEvent;
+			
+			override public function set data( value:Object ):void
+			{
+				super.data = value;
+				invalidateProperties();
+				invalidateDisplayList();
+			}
+			
+			override protected function commitProperties():void
+			{
+				if( data )
+				{
+					var user:ChatUser = data as ChatUser;
+				 if (user.online==true )
+				 {
+				 state.data="online.jpg"
+				 }
+				if(user.online==false)
+				 {
+				  state.data="offline.jpg"
+
+				 }
+				if(user.show=="away")
+				 {
+					 state.data="idle.jpg"
+				 }
+				 if(user.show=="dnd"||user.show=="DND")
+				 {
+					 state.data="dnd.jpg"
+				 }
+				 if(user.show=="unavailable")
+				 {
+					 state.data="offline.jpg";
+				 }
+				}
+		
+			}
+		]]>
+	</mx:Script>
+	<mx:Image id="state" x="0" y="0" width="14" height="16"/>
+	
+</mx:Canvas>

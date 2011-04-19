@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Window xmlns:mx="http://www.adobe.com/2006/mxml" 
+		   layout="vertical"
+		   paddingTop="0"
+		   paddingLeft="10"
+		   paddingRight="10"
+		   paddingBottom="10"
+		   width="1000"
+		   height="700"
+		   minWidth="400"
+		   minHeight="500"
+		   creationComplete="init()"
+		   close="closeApp()"
+		   styleName="title"
+		   closeEffect="fadeOut"
+		   creationCompleteEffect="Iris"
+		   resizeEffect="Blur"
+		    
+		   >
+	<mx:HTML id="htmlRenderer"
+			 width="100%" 
+			 height="100%"
+			 complete="doneLoading();"
+			   
+			 />
+	
+	<mx:Style source="style.css"/>
+	<mx:Fade alphaFrom="1" alphaTo="0" id="fadeOut" duration="500" />
+	
+	<mx:Script>
+		<![CDATA[
+			import hosts.CustomHost;
+			
+			import mx.collections.ArrayCollection;
+			import mx.effects.easing.Back;
+			[Bindable]
+			public var typedinaddresses:Array = new Array;
+			[Bindable]
+			public var pos:Number;
+			public var htmlHost : CustomHost;
+			public var taddress:String;
+			public var add:String;
+			//Application initialization
+			public function init():void
+			{
+				htmlRenderer.htmlLoader.textEncodingFallback = "UTF-8";
+				htmlRenderer.addEventListener(Event.LOCATION_CHANGE, locChange)
+				htmlHost = new CustomHost();
+				htmlRenderer.htmlLoader.htmlHost = htmlHost;
+				
+		/*		//read history
+				var file : File = File.applicationStorageDirectory;
+				file = file.resolvePath("hist.ffx");
+				address.text = "";
+				address.selectedIndex = -1;
+				if ((file.exists) && (!file.isDirectory))
+				{
+					var fs : FileStream= new FileStream();
+					fs.open(file,FileMode.READ);
+					typedinaddresses = fs.readObject() as Array;
+					fs.close();
+				}
+				address.selectedIndex = -1;
+				address.text = "";
+				
+				stage.focus = address;
+				*/
+			}
+			
+			//Location change event handler
+			public function set address(value:String):void{
+				taddress=value;
+			}
+			public function get address():String{
+				return taddress;
+			}
+		public function locChange(ev : Event):void
+			{
+			
+			/*	
+				refresh.enabled = true;
+				if ((htmlRenderer.historyPosition > 0) || (htmlRenderer.historyLength == 1))
+				{
+					back.enabled = true;
+				}
+				else
+				{
+					back.enabled = false;
+				}
+				
+				
+				if (htmlRenderer.historyPosition < htmlRenderer.historyLength -1)
+				{
+					forward.enabled = true;
+				}
+				else
+				{
+					forward.enabled = false;
+				}*/
+				
+				status = "Loading ...";
+			}
+			
+			//Clicking go
+			public function clickGo(addr:String):void
+			{
+				htmlRenderer.location = addr;
+				/*  if (address.value.toString() == "") return;
+				var add : String = address.value.toString();
+				if (add.indexOf("://")<0)
+				{
+					add = "http://" + add;
+				}
+				
+				if ((typedinaddresses.indexOf(add)<0) && (typedinaddresses.indexOf(add + "/")<0))
+				{
+					typedinaddresses = typedinaddresses.reverse();
+					typedinaddresses.push(add);
+					while (typedinaddresses.length > 50)
+					{
+						typedinaddresses.shift();
+					}
+					typedinaddresses = typedinaddresses.reverse();
+				}
+				*/
+			}
+			
+			//Changing the location
+			public function set locationChange(val : String):void
+			{
+				address = htmlRenderer.location;
+			}
+			
+			//Updating the current page after a selection from the page
+			public function closeList():void
+			{
+				//clickGo();
+				stage.focus = htmlRenderer.htmlLoader;
+			}
+			
+			public function goBack():void
+			{
+				htmlRenderer.historyBack()
+			}
+			
+			public function goFwd():void
+			{
+				htmlRenderer.historyForward();
+			}
+			
+			//Save combobox data on the disk before closing
+			public function closeApp():void
+			{
+			/*	var fs : FileStream= new FileStream();
+				var file : File = File.applicationStorageDirectory;
+				file = file.resolvePath("hist.ffx");
+				fs.open(file,FileMode.WRITE);
+				fs.writeObject(typedinaddresses);
+				fs.close();
+			*/
+				}
+			
+	
+			public function doneLoading():void
+			{
+				status = "Done";
+			}
+			
+			
+			
+		]]>
+		
+	</mx:Script>
+	<mx:Binding source="htmlRenderer.location" destination="this.locationChange" />
+</mx:Window>
